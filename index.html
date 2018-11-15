@@ -36,6 +36,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-y: auto;
         }
 
         .shopping-cart-area .product {
@@ -52,15 +53,42 @@
             font-size: 3rem;
             color: cornsilk;
         }
+
+        .buyable {
+            display:flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .buyable input, .buyable button {
+            box-sizing: border-box;
+            margin-top: .5rem;
+            width: 100%;
+            border-radius: .25rem;
+            padding: 0 1rem;
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: 1fr 8ch;
+            align-items: center;
+            justify-items: center;
+        }
     </style>
 </head>
 <body>
     <main id="app">
         <products-area>
-            <product v-for="(product, index) in products" :index="index" :product-number="product" @click="addToShoppingCart"></product>
+            <buyable v-for="(product, index) in products" :index="index" @click="addToShoppingCart" :key="product">
+                <product :product-number="product"></product>
+            </buyable>
         </products-area>
         <shopping-cart-area>
-            <product v-for="(product, index) in shoppingCartProducts" :index="index" :product-number="product" @click="removeFromShoppingCart"></product>
+            <cart-item v-for="(cartItem, index) in shoppingCartProducts" :index="index" :key="cartItem.key"
+                       @click="removeFromShoppingCart">
+                <product :product-number="cartItem.product"></product>
+            </cart-item>
         </shopping-cart-area>
     </main>
 
@@ -81,29 +109,63 @@
           `
         });
 
+        Vue.component('buyable', {
+            props: ['index'],
+            data: function(){
+              return {
+                buyCount: 1
+              }
+            },
+            template:`
+                <div class="buyable">
+                    <slot></slot>
+                    <input type="number" min="1" v-model="buyCount" />
+                    <button @click="addToCart">Add to Cart</button>
+                </div>
+            `,
+            methods: {
+              addToCart: function(){
+                this.$emit('click', {index:this.index, buyCount:this.buyCount});
+                this.buyCount = 1;
+              }
+            }
+          }
+        );
+
+        Vue.component('cart-item',{
+          props: ['index'],
+          template:`
+            <div class='cart-item'>
+                <slot></slot>
+                <i class="fas fa-minus-square fa-4x" @click="$emit('click', index)"></i>
+            </div>
+          `
+          }
+        );
+
         Vue.component('product', {
-          props: ['productNumber', 'index'],
+          props: ['productNumber'],
           template: `
-            <div class="product" @click="$emit('click', index)">{{productNumber}}</div>
+            <div class="product">{{productNumber}}</div>
           `
         });
 
+        let shoppingCartKey = 0;
         const vm = new Vue({
           el: "#app",
           data:{
-            products: [1,2,3,4,5],
+            products: [1,2,3,4,5,6,7,8,9,10],
             shoppingCartProducts: []
           },
           methods: {
-            addToShoppingCart: function(productsIndex){
-              //Add the product at the index in the products array to the shopping cart
-              this.shoppingCartProducts.push(this.products[productsIndex]);
-
-              //Remove/Splice the index from the products array
-              this.products.splice(productsIndex, 1);
+            addToShoppingCart: function(event){
+              for(let i = 0; i < event.buyCount; i++) {
+                const product = this.products[event.index];
+                shoppingCartKey++;
+                this.shoppingCartProducts.push({key:shoppingCartKey, product});
+              }
             },
             removeFromShoppingCart: function(cartIndex){
-              this.products.push(this.shoppingCartProducts[cartIndex]);
               this.shoppingCartProducts.splice(cartIndex, 1);
             }
           }
