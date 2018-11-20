@@ -1,0 +1,23 @@
+[
+	{
+		"id": 1,
+		"name": "Mashed Potatoes",
+		"price": 2.5
+	},
+	{
+		"id": 2,
+		"name": "Gravy",
+		"price": 0.5
+	},
+	{
+		"id": 3,
+		"name": "Green Bean Casserole",
+		"price": 3
+	},
+	{
+		"id": 4,
+		"name": "Turkey",
+		"price": 10
+	}
+
+]

@@ -7,14 +7,12 @@
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css"
           integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-
     <style>
         body main {
             display: grid;
             height: 100vh;
             width: 100vw;
-            grid-template-areas:
-                "products-area shopping-cart-area";
+            grid-template-areas: "products-area shopping-cart-area";
             grid-template-columns: 75% 1fr;
         }
 
@@ -43,19 +41,36 @@
             margin-top: 1rem;
         }
 
-        .product{
+        .product {
             background-color: rosybrown;
-            height: 10vw;
+            height: 15vw;
             width: 20vw;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
+            font-size: 1.5rem;
             color: cornsilk;
+            padding: 1rem;
+            flex-direction: column;
+            box-sizing: border-box;
+            text-shadow: black 1px 1px;
+        }
+
+        .product .name {
+            flex-grow:1;
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        .product .price {
+            flex-grow: 0;
+            flex-basis: 2rem;
+            font-size: 1rem;
+            vertical-align: bottom;
         }
 
         .buyable {
-            display:flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
@@ -78,99 +93,114 @@
     </style>
 </head>
 <body>
-    <main id="app">
-        <products-area>
-            <buyable v-for="(product, index) in products" :index="index" @click="addToShoppingCart" :key="product">
-                <product :product-number="product"></product>
-            </buyable>
-        </products-area>
-        <shopping-cart-area>
-            <cart-item v-for="(cartItem, index) in shoppingCartProducts" :index="index" :key="cartItem.key"
-                       @click="removeFromShoppingCart">
-                <product :product-number="cartItem.product"></product>
-            </cart-item>
-        </shopping-cart-area>
-    </main>
+<main id="app">
+    <products-area>
+        <buyable v-for="(product, index) in products" :index="index" @click="addToShoppingCart" :key="product.id">
+            <product :name="product.name" :price="product.price" :id="product.id"></product>
+        </buyable>
+    </products-area>
+    <shopping-cart-area :shopping-cart-items="shoppingCartItems">
+        <cart-item v-for="(cartItem, index) in shoppingCartItems" :index="index" :key="cartItem.key"
+                   @click="removeFromShoppingCart">
+            <product :name="cartItem.product.name" :price="cartItem.product.price" :id="cartItem.product.id"></product>
+        </cart-item>
+    </shopping-cart-area>
+</main>
 
-    <script>
-        Vue.component('products-area',{
-          template: `
+<script>
+  Vue.component('products-area', {
+    template: `
             <section class="products-area">
                 <slot></slot>
             </section>
           `
-        });
+  });
 
-        Vue.component('shopping-cart-area', {
-          template: `
+  Vue.component('shopping-cart-area', {
+    props: ['shoppingCartItems'],
+    template: `
             <section class="shopping-cart-area">
                 <slot></slot>
+                <strong>\${{Number(totalPrice).toFixed(2)}}</strong>
             </section>
-          `
-        });
+          `,
+    computed:{
+      totalPrice: function(){
+        return this.shoppingCartItems
+          .map(item => item.product) //transforms shopping cart item array into array of products
+          .reduce((prev, current) => prev + current.price, 0); //gets total of products
+      }
+    }
+  });
 
-        Vue.component('buyable', {
-            props: ['index'],
-            data: function(){
-              return {
-                buyCount: 1
-              }
-            },
-            template:`
+  Vue.component('buyable', {
+      props: ['index'],
+      data: function () {
+        return {
+          buyCount: 1
+        };
+      },
+      template: `
                 <div class="buyable">
                     <slot></slot>
                     <input type="number" min="1" v-model="buyCount" />
                     <button @click="addToCart">Add to Cart</button>
                 </div>
             `,
-            methods: {
-              addToCart: function(){
-                this.$emit('click', {index:this.index, buyCount:this.buyCount});
-                this.buyCount = 1;
-              }
-            }
-          }
-        );
+      methods: {
+        addToCart: function () {
+          this.$emit('click', { index: this.index, buyCount: this.buyCount });
+          this.buyCount = 1;
+        }
+      }
+    }
+  );
 
-        Vue.component('cart-item',{
-          props: ['index'],
-          template:`
+  Vue.component('cart-item', {
+      props: ['index'],
+      template: `
             <div class='cart-item'>
                 <slot></slot>
                 <i class="fas fa-minus-square fa-4x" @click="$emit('click', index)"></i>
             </div>
           `
-          }
-        );
+    }
+  );
 
-        Vue.component('product', {
-          props: ['productNumber'],
-          template: `
-            <div class="product">{{productNumber}}</div>
+  Vue.component('product', {
+    props: ['id', 'name', 'price'],
+    template: `
+            <div class="product">
+                <div class="name">{{name}}</div>
+                <div class="price">\${{Number(price).toFixed(2)}}</div>
+            </div>
           `
-        });
+  });
 
-        let shoppingCartKey = 0;
-        const vm = new Vue({
-          el: "#app",
-          data:{
-            products: [1,2,3,4,5,6,7,8,9,10],
-            shoppingCartProducts: []
-          },
-          methods: {
-            addToShoppingCart: function(event){
-              for(let i = 0; i < event.buyCount; i++) {
-                const product = this.products[event.index];
-                shoppingCartKey++;
-                this.shoppingCartProducts.push({key:shoppingCartKey, product});
-              }
-            },
-            removeFromShoppingCart: function(cartIndex){
-              this.shoppingCartProducts.splice(cartIndex, 1);
-            }
-          }
-        });
+  let shoppingCartKey = 0;
+  const vm = new Vue({
+    el: '#app',
+    data: {
+      products: [],
+      shoppingCartItems: []
+    },
+    methods: {
+      addToShoppingCart: function (event) {
+        for (let i = 0; i < event.buyCount; i++) {
+          const product = this.products[event.index];
+          shoppingCartKey++;
+          this.shoppingCartItems.push({ key: shoppingCartKey, product });
+        }
+      },
+      removeFromShoppingCart: function (cartIndex) {
+        this.shoppingCartItems.splice(cartIndex, 1);
+      }
+    }
+  });
 
-    </script>
+  fetch('products.json')
+    .then(response => response.json())
+    .then(data => vm.products.push(...data));
+</script>
 </body>
 </html>
